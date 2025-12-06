@@ -4,12 +4,13 @@ import logging
 
 logger = logging.getLogger("AIService")
 
-def process_with_n8n(chat_context: str, current_message: str):
+def process_with_n8n(chat_context: str, current_message: str, phone: str):
     url = settings.N8N_WEBHOOK_URL
     
     payload = {
         "log-de-conversas": chat_context,
-        "pergunta-do-usuario-atual": current_message
+        "pergunta-do-usuario-atual": current_message,
+        "telefone-usuario": f"{phone}@s.whatsapp.net"
     }
     
     try:

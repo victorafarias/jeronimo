@@ -48,13 +48,30 @@ def process_request(queue_id: int):
         
         # Extrair mensagem
         msg_obj = data.get("message", {})
+        message_type = data.get("messageType", "")
+        
+        # Mapeamento básico de tipos aceitos
+        # Texto pode vir como "conversation" ou "extendedTextMessage"
+        # Audio como "audioMessage"
+        
+        is_text = "conversation" in msg_obj or "extendedTextMessage" in msg_obj
+        is_audio = "audioMessage" in msg_obj
+        
+        # (*Melhoria) 1. Verifica no json da requisição o tipo de mensagem enviada
+        if not (is_text or is_audio):
+            logger.info(f"Tipo de mensagem não suportado: {message_type}")
+            send_message(phone, "Desculpe, no momento só consigo processar mensagens de texto e áudio.")
+            log_step(db, queue_id, "TYPE_CHECK", "stopped", f"Tipo não suportado: {message_type}")
+            item.status = "completed"
+            db.commit()
+            return
+            
         message_text = msg_obj.get("conversation") or \
                        msg_obj.get("extendedTextMessage", {}).get("text") or \
                        ""
                        
-        # Se for áudio, tratar depois (por enquanto focar em texto conforme requisito fluxo)
-        if not message_text and "audioMessage" in msg_obj:
-            message_text = "[ÁUDIO RECEBIDO - Transcrição pendente]" 
+        if is_audio and not message_text:
+             message_text = "[ÁUDIO RECEBIDO - Transcrição pendente]" 
 
         if not message_text:
             logger.warning("Mensagem vazia ou tipo não suportado.")
@@ -102,7 +119,7 @@ def process_request(queue_id: int):
         # Passo 5
         log_step(db, queue_id, "AI_PROCESS", "processing", "Enviando para n8n")
         try:
-            ai_response = process_with_n8n(context, message_text)
+            ai_response = process_with_n8n(context, message_text, phone)
             
             if ai_response:
                 # Passo 6 (Sucesso)
