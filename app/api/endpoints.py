@@ -15,10 +15,20 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
         
         # O payload da Evolution vem como uma lista normalmente
         if isinstance(payload, list):
+            logger.info("Processando lista de mensagens...")
             for message in payload:
-                add_to_queue(db, message)
+                item = add_to_queue(db, message)
+                if item:
+                     logger.info(f"Item salvo na fila com ID: {item.id}")
+                else:
+                     logger.warning("Item ignorado (evento incorreto?)")
         else:
-            add_to_queue(db, payload)
+            logger.info("Processando mensagem única...")
+            item = add_to_queue(db, payload)
+            if item:
+                 logger.info(f"Item salvo na fila com ID: {item.id}")
+            else:
+                 logger.warning("Item ignorado (evento incorreto?)")
             
         return {"status": "received"}
     except Exception as e:
