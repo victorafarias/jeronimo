@@ -4,10 +4,13 @@ import json
 
 def add_to_queue(db: Session, payload: dict):
     # Validar se é uma mensagem de interesse (ex: messages.upsert)
-    # Segundo o payload de exemplo: "body" -> "event": "messages.upsert"
+    # Tenta pegar evento direto da raiz (Padrão Evolution) ou de 'body' (caso venha encapsulado)
+    event = payload.get("event")
     
-    body = payload.get("body", {})
-    event = body.get("event")
+    if not event:
+        body = payload.get("body", {})
+        if isinstance(body, dict):
+            event = body.get("event")
     
     if event == "messages.upsert":
         # Extrair dados básicos para log rápido se necessário, 
