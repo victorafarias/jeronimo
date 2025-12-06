@@ -22,10 +22,13 @@ def agent_manager_loop():
     logger.info("Iniciando Gerenciador de Agentes (Scaling Dinâmico)...")
     while True:
         try:
+            logger.info("Tentando conectar ao banco para buscar itens...") # DEBUG
             with SessionLocal() as db:
+                logger.info("Conexão aberta. Buscando itens pendentes...") # DEBUG
                 # Busca todos os pendentes (poderia limitar para não estourar memória, mas vamos assumir volume controlável por enquanto)
                 # Ou pega um lote grande, ex: 100
                 items = get_pending_items(db, 50) 
+                logger.info(f"Query executada. Itens encontrados: {len(items)}") # DEBUG 
                 count = len(items)
                 
                 if count > 0:
