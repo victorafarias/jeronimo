@@ -17,9 +17,7 @@ def send_message(phone: str, text: str):
             "presence": "composing",
             "linkPreview": False
         },
-        "textMessage": {
-            "text": text
-        }
+        "text": text
     }
     
     try:
