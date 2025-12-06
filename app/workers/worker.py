@@ -31,9 +31,16 @@ def process_request(queue_id: int):
         # Payload disponível em item.payload
         # Extrair dados do payload (Evolution API v2 structure)
         # Exemplo: body -> data -> message -> conversation (texto) ou audioMessage
+        # Payload disponível em item.payload
         payload = item.payload
+        
+        # Tenta pegar 'data' de 'body' ou da raiz
         body = payload.get("body", {})
-        data = body.get("data", {})
+        data = body.get("data")
+        
+        if not data:
+            data = payload.get("data", {})
+            
         key = data.get("key", {})
         remote_jid = key.get("remoteJid", "")
         if not remote_jid:
