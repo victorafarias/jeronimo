@@ -6,12 +6,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def init_db():
-    logger.info("Criando tabelas no banco de dados...")
+    logger.info("Creating tables in database...")
     try:
         Base.metadata.create_all(bind=engine)
-        logger.info("Tabelas criadas com sucesso!")
+        logger.info("Tables created successfully!")
     except Exception as e:
-        logger.error(f"Erro ao criar tabelas: {e}")
+        logger.error(f"Error creating tables: {e}")
 
 if __name__ == "__main__":
     init_db()
