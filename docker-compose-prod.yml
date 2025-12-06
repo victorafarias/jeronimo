@@ -1,0 +1,66 @@
+services:
+  api:
+    build: .
+    container_name: jeronimo_api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    networks:
+      - root_default
+    labels:
+      - "traefik.enable=true"
+      # Roteador para o Frontend (React App)
+      # Pega todo o tráfego que NÃO é da API
+      - "traefik.http.routers.jeronimo-api.rule=Host(`jeronimo.ovictorfarias.com.br`) && PathPrefix(`/`)"
+      - "traefik.http.routers.jeronimo-api.priority=1" # Prioridade baixa
+      - "traefik.http.routers.jeronimo-api.entrypoints=web,websecure"
+      - "traefik.http.routers.jeronimo-api.tls.certresolver=mytlschallenge"
+      - "traefik.http.routers.jeronimo-api.tls=true"
+      - "traefik.http.services.jeronimo-api.loadbalancer.server.port=8000" # Uvicorn roda na porta 8000
+      - "traefik.docker.network=root_default"
+
+  dashboard:
+    build: .
+    container_name: jeronimo_dashboard
+    command: streamlit run dashboard/app.py --server.port 8501 --server.address 0.0.0.0
+    volumes:
+      - .:/app
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    networks:
+      - root_default
+    depends_on:
+      - api
+    labels:
+      - "traefik.enable=true"
+      # Roteador para o Dashboard
+      - "traefik.http.routers.dashboard-jeronimo.rule=Host(`dashboard-jeronimo.ovictorfarias.com.br`) && PathPrefix(`/`)"
+      - "traefik.http.routers.dashboard-jeronimo.priority=1"
+      - "traefik.http.routers.dashboard-jeronimo.entrypoints=web,websecure"
+      - "traefik.http.routers.dashboard-jeronimo.tls.certresolver=mytlschallenge"
+      - "traefik.http.routers.dashboard-jeronimo.tls=true"
+      - "traefik.http.services.dashboard-jeronimo.loadbalancer.server.port=8501"
+      - "traefik.docker.network=root_default"
+
+  worker:
+    build: .
+    container_name: jeronimo_worker
+    command: python -m app.workers.agent_manager
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    networks:
+      - root_default
+    depends_on:
+      - api
+
+networks:
+  root_default:
+    external: true
