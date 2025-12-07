@@ -53,14 +53,20 @@ def check_block_and_compliant(db: Session, user: User):
         
     return True
 
-def get_chat_context(db: Session, user_phone: str):
+def get_chat_context(db: Session, user_phone: str, exclude_message_id: int = None):
     # Passo 4: Conversas nos últimos 30 min
     limit_time = datetime.now() - timedelta(minutes=30)
     
-    logs = db.query(ChatLog).filter(
+    query = db.query(ChatLog).filter(
         ChatLog.user_phone == user_phone,
         ChatLog.timestamp >= limit_time
-    ).order_by(ChatLog.timestamp.asc()).all()
+    )
+    
+    # Exclui a mensagem atual do contexto (pois ela vai em 'pergunta-do-usuario-atual')
+    if exclude_message_id:
+        query = query.filter(ChatLog.id != exclude_message_id)
+        
+    logs = query.order_by(ChatLog.timestamp.asc()).all()
     
     if not logs:
         return ""
@@ -78,3 +84,5 @@ def save_chat_log(db: Session, phone: str, text: str, origin: str):
     log = ChatLog(user_phone=phone, message_text=text, origin=origin)
     db.add(log)
     db.commit()
+    db.refresh(log)
+    return log

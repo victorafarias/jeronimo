@@ -102,7 +102,7 @@ def process_request(queue_id: int):
         user = get_or_create_user(db, phone, push_name)
         
         # Loga a mensagem do usuário
-        save_chat_log(db, phone, message_text, "user")
+        user_msg_log = save_chat_log(db, phone, message_text, "user")
 
         if not user.is_client:
             # Lógica de Lead
@@ -121,7 +121,8 @@ def process_request(queue_id: int):
             return
             
         # Passo 4
-        context = get_chat_context(db, phone)
+        # Excluir a mensagem atual do contexto para não duplicar no prompt
+        context = get_chat_context(db, phone, exclude_message_id=user_msg_log.id)
         
         # Passo 5
         log_step(db, queue_id, "AI_PROCESS", "processing", "Enviando para n8n")
