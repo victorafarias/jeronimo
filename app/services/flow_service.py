@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.models.all_models import User, Lead, ChatLog
+from app.models.all_models import User, ChatLog
 from app.services.evolution_service import send_message
 from datetime import datetime, timedelta
 import logging
@@ -10,27 +10,26 @@ def get_or_create_user(db: Session, phone: str, push_name: str):
     user = db.query(User).filter(User.phone == phone).first()
     
     if not user:
-        # Verifica se já existe na tabela de leads
-        lead = db.query(Lead).filter(Lead.phone == phone).first()
-        
-        if not lead:
-             # Grava dados na tabela de lead se não for cliente e não existir ainda
-             new_lead = Lead(phone=phone)
-             db.add(new_lead)
-             db.commit()
-             
-        user = User(phone=phone, name=push_name, is_client=False) # Default não cliente
+        # Cria usuário direto (conceito de Lead está implícito em is_client=False)
+        user = User(phone=phone, name=push_name, is_client=False)
         db.add(user)
         db.commit()
         db.refresh(user)
+    else:
+        # Atualiza nome se vier diferente e não tiver nome salvo?
+        # Por enquanto mantemos o original ou atualizamos. Vamos atualizar se o push_name vier.
+        if push_name and user.name != push_name:
+            user.name = push_name
+            db.commit()
+            
     return user
 
 def process_lead_logic(db: Session, user: User, message_text: str):
     # Regra: Lead tem limite de 3 respostas da IA.
     
     bot_responses = db.query(ChatLog).filter(
-        ChatLog.user_phone == user.phone, 
-        ChatLog.origin == 'bot'
+        ChatLog.user_id == user.id, 
+        ChatLog.sent_by_user == False
     ).count()
     
     # Se JÁ TIVER 3 ou mais respostas, bloqueia.
@@ -53,12 +52,12 @@ def check_block_and_compliant(db: Session, user: User):
         
     return True
 
-def get_chat_context(db: Session, user_phone: str, exclude_message_id: int = None):
+def get_chat_context(db: Session, user_id: int, exclude_message_id: int = None):
     # Passo 4: Conversas nos últimos 30 min
     limit_time = datetime.now() - timedelta(minutes=30)
     
     query = db.query(ChatLog).filter(
-        ChatLog.user_phone == user_phone,
+        ChatLog.user_id == user_id,
         ChatLog.timestamp >= limit_time
     )
     
@@ -73,19 +72,19 @@ def get_chat_context(db: Session, user_phone: str, exclude_message_id: int = Non
         
     formatted = ""
     for log in logs:
-        if log.origin == 'user':
+        if log.sent_by_user:
             formatted += f"Usuário: {log.message_text}\n"
-        elif log.origin == 'bot':
+        else:
             formatted += f"Resposta da IA: {log.message_text}\n\n"
             
     return formatted
 
-def save_chat_log(db: Session, phone: str, text: str, origin: str, 
+def save_chat_log(db: Session, user_id: int, text: str, sent_by_user: bool, 
                   message_type: str = "text", media_data: str = None, evolution_id: str = None):
     log = ChatLog(
-        user_phone=phone, 
+        user_id=user_id, 
         message_text=text, 
-        origin=origin,
+        sent_by_user=sent_by_user,
         message_type=message_type,
         media_data=media_data,
         evolution_id=evolution_id

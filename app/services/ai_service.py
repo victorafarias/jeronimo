@@ -4,7 +4,7 @@ import logging
 
 logger = logging.getLogger("AIService")
 
-def process_with_n8n(chat_context: str, current_message: str, phone: str, 
+def process_with_n8n(chat_context: str, current_message: str, phone: str, user_name: str = None,
                      message_type: str = "text", media_data: str = None, message_id: str = None):
     url = settings.N8N_WEBHOOK_URL
     
@@ -12,6 +12,7 @@ def process_with_n8n(chat_context: str, current_message: str, phone: str,
         "log-de-conversas": chat_context,
         "pergunta-do-usuario-atual": current_message,
         "telefone-usuario": f"{phone}@s.whatsapp.net",
+        "nome_usuario": user_name,
         "tipo_mensagem": message_type,
         "audio_base64": media_data, # Pode ser null se for texto
         "message_id": message_id

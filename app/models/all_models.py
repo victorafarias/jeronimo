@@ -13,29 +13,18 @@ class User(Base):
     is_compliant = Column(Boolean, default=True) # Adimplente
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-class Lead(Base):
-    __tablename__ = "leads"
-
-    id = Column(Integer, primary_key=True, index=True)
-    phone = Column(String, unique=True, index=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    interaction_count = Column(Integer, default=0)
-
 class ChatLog(Base):
     __tablename__ = "chat_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_phone = Column(String, index=True) # Relacionamento lógico via telefone para facilitar
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=True) # Nullable temporário para migração, depois poderia ser False
     message_text = Column(String, nullable=True)
-    # Se origin for 'bot', response_text pode ser redundante se usarmos message_text,
-    # mas o requisito pede "log de conversas (perguntas e respostas)".
-    # Vamos estruturar: uma entrada para cada mensagem (user ou bot).
-    origin = Column(String) # 'user', 'bot', 'system'
+    sent_by_user = Column(Boolean, default=True) # Substituto de origin. True=User, False=Bot
+    
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
-    message_type = Column(String, nullable=True) # text, audio, image, etc.
-    media_data = Column(String, nullable=True) # Base64 ou URL (Text type seria melhor para base64 grande, mas String as vezes é limitado. SQLAlchemy String mapeia para VARCHAR/TEXT no pg). Vamos usar Text se necessario, mas String costuma ser OK. Para Base64 de AUDIO, melhor usar TEXT explícito se possível. 
-    # SQLAlchemy: String sem length vira TEXT no postgres.
-    evolution_id = Column(String, nullable=True) # ID da mensagem na Evolution (key.id)
+    message_type = Column(String, nullable=True) 
+    media_data = Column(String, nullable=True) 
+    evolution_id = Column(String, nullable=True)
 
 class RequestQueue(Base):
     __tablename__ = "request_queue"

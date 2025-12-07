@@ -116,8 +116,8 @@ def process_request(queue_id: int):
         log_step(db, queue_id, "STEP_1", "processing", "Identificando usuário")
         user = get_or_create_user(db, phone, push_name)
         
-        # Loga a mensagem do usuário (COM NOVOS CAMPOS)
-        user_msg_log = save_chat_log(db, phone, message_text, "user", 
+        # Loga a mensagem do usuário (COM NOVOS CAMPOS E FK)
+        user_msg_log = save_chat_log(db, user.id, message_text, sent_by_user=True, 
                                      message_type=message_type, 
                                      media_data=media_data, 
                                      evolution_id=evo_id)
@@ -140,21 +140,22 @@ def process_request(queue_id: int):
             
         # Passo 4
         # Excluir a mensagem atual do contexto para não duplicar no prompt
-        context = get_chat_context(db, phone, exclude_message_id=user_msg_log.id)
+        context = get_chat_context(db, user.id, exclude_message_id=user_msg_log.id)
         
         # Passo 5
         log_step(db, queue_id, "AI_PROCESS", "processing", "Enviando para n8n")
         try:
-            # Enviando para n8n com novos campos
+            # Enviando para n8n com novos campos e NOME DO USUARIO
             ai_response = process_with_n8n(context, message_text, phone, 
+                                           user_name=user.name,
                                            message_type=message_type, 
                                            media_data=media_data, 
                                            message_id=evo_id)
             
             if ai_response:
                 # Passo 6 (Sucesso)
-                # Resposta da IA sempre é texto por enquanto, e gerada pelo bot (sem evo id externo)
-                save_chat_log(db, phone, ai_response, "bot", message_type="text") 
+                # Resposta da IA sempre é texto por enquanto, e gerada pelo bot (sent_by_user=False)
+                save_chat_log(db, user.id, ai_response, sent_by_user=False, message_type="text") 
                 send_message(phone, ai_response)
                 log_step(db, queue_id, "RESPONSE", "success", "Resposta enviada")
                 item.status = "completed"
