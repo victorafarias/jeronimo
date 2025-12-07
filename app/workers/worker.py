@@ -107,7 +107,8 @@ def process_request(queue_id: int):
             process_lead_logic, 
             check_block_and_compliant, 
             get_chat_context, 
-            save_chat_log
+            save_chat_log,
+            update_chat_log_with_response
         )
         from app.services.evolution_service import send_message
         from app.services.ai_service import process_with_n8n
@@ -154,8 +155,9 @@ def process_request(queue_id: int):
             
             if ai_response:
                 # Passo 6 (Sucesso)
-                # Resposta da IA sempre é texto por enquanto, e gerada pelo bot (sent_by_user=False)
-                save_chat_log(db, user.id, ai_response, sent_by_user=False, message_type="text") 
+                # ATUALIZA o log original com a resposta
+                update_chat_log_with_response(db, user_msg_log.id, ai_response) 
+                
                 send_message(phone, ai_response)
                 log_step(db, queue_id, "RESPONSE", "success", "Resposta enviada")
                 item.status = "completed"

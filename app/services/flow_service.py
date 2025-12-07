@@ -72,14 +72,16 @@ def get_chat_context(db: Session, user_id: int, exclude_message_id: int = None):
         
     formatted = ""
     for log in logs:
-        if log.sent_by_user:
+        # Formato: Pergunta + Resposta (se houver)
+        if log.message_text:
             formatted += f"Usuário: {log.message_text}\n"
-        else:
-            formatted += f"Resposta da IA: {log.message_text}\n\n"
+        
+        if log.response_text:
+            formatted += f"Resposta da IA: {log.response_text}\n\n"
             
     return formatted
 
-def save_chat_log(db: Session, user_id: int, text: str, sent_by_user: bool, 
+def save_chat_log(db: Session, user_id: int, text: str, sent_by_user: bool = True, 
                   message_type: str = "text", media_data: str = None, evolution_id: str = None):
     log = ChatLog(
         user_id=user_id, 
@@ -92,4 +94,12 @@ def save_chat_log(db: Session, user_id: int, text: str, sent_by_user: bool,
     db.add(log)
     db.commit()
     db.refresh(log)
+    return log
+
+def update_chat_log_with_response(db: Session, log_id: int, response: str):
+    log = db.query(ChatLog).filter(ChatLog.id == log_id).first()
+    if log:
+        log.response_text = response
+        db.commit()
+        db.refresh(log)
     return log

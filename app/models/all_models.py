@@ -18,8 +18,9 @@ class ChatLog(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=True) # Nullable temporário para migração, depois poderia ser False
-    message_text = Column(String, nullable=True)
-    sent_by_user = Column(Boolean, default=True) # Substituto de origin. True=User, False=Bot
+    message_text = Column(String, nullable=True) # Pergunta do Usuário
+    response_text = Column(String, nullable=True) # Resposta da IA
+    sent_by_user = Column(Boolean, default=True) # Geralmente True agora, pois user inicia. Se False, foi bot proativo (not supported yet).
     
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
     message_type = Column(String, nullable=True) 

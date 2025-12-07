@@ -24,11 +24,35 @@ def process_with_n8n(chat_context: str, current_message: str, phone: str, user_n
         response = httpx.post(url, json=payload, timeout=60.0)
         
         if response.status_code == 200:
-            # Assumindo que o n8n retorna JSON com campo 'resposta' ou 'text'
-            # Se retornar texto puro, pegamos .text
-            data = response.json()
-            # Ajuste conforme o output real do n8n
-            return data.get("output") or data.get("text") or data.get("resposta") or response.text
+            try:
+                data = response.json()
+                logger.info(f"Resposta bruta n8n: {data}") # Debug temporário
+                
+                # Caso 1: Retorno complexo estilo Evolution (Lista de objetos)
+                if isinstance(data, list) and len(data) > 0:
+                    first_item = data[0]
+                    # Tenta extrair de message.conversation
+                    msg = first_item.get("message", {})
+                    if isinstance(msg, dict):
+                         return msg.get("conversation") or msg.get("extendedTextMessage", {}).get("text")
+                         
+                    # Tenta extrair textMessage.text (outro formato possível)
+                    text_msg = first_item.get("textMessage", {})
+                    if text_msg:
+                        return text_msg.get("text")
+                        
+                    return str(first_item) # Fallback
+
+                # Caso 2: Retorno simples (Dict)
+                if isinstance(data, dict):
+                    # Formatos comuns n8n
+                    return data.get("output") or data.get("text") or data.get("resposta") or \
+                           data.get("message", {}).get("conversation") # Caso venha um objeto Evolution único
+                           
+                return response.text # Fallback texto puro
+                
+            except ValueError:
+                return response.text
         else:
             logger.error(f"Erro n8n: {response.status_code} - {response.text}")
             return None
