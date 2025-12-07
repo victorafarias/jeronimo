@@ -53,9 +53,12 @@ def process_request(queue_id: int):
         phone = remote_jid.split("@")[0]
         push_name = data.get("pushName", "Desconhecido")
         
+        # Extrair dados básicos para log
+        evo_id = key.get("id")
+        
         # Extrair mensagem
         msg_obj = data.get("message", {})
-        message_type = data.get("messageType", "")
+        message_type = data.get("messageType", "text") # default text
         
         # Mapeamento básico de tipos aceitos
         # Texto pode vir como "conversation" ou "extendedTextMessage"
@@ -76,11 +79,23 @@ def process_request(queue_id: int):
         message_text = msg_obj.get("conversation") or \
                        msg_obj.get("extendedTextMessage", {}).get("text") or \
                        ""
-                       
-        if is_audio and not message_text:
-             message_text = "[ÁUDIO RECEBIDO - Transcrição pendente]" 
+        
+        media_data = None
+        if is_audio:
+             if not message_text:
+                message_text = "[ÁUDIO RECEBIDO]" # Placeholder para log
+             
+             # Tentar extrair base64 do payload (requer configuração includeBase64OnData na Evolution)
+             audio_msg = msg_obj.get("audioMessage", {})
+             # Evolution v2 as vezes manda direto ou pode precisar de fetch. O usuario pediu para enviar base64.
+             # Vamos tentar pegar 'base64' (comum em algumas versoes) ou verificar se há necessidade de download.
+             # Por hora, assumindo que vem no payload conforme padrao de webhook full
+             media_data = audio_msg.get("base64") 
+             
+             if not media_data:
+                 logger.warning("Base64 de áudio não encontrado no payload. Verifique cfg da Evolution.")
 
-        if not message_text:
+        if not message_text and not is_audio:
             logger.warning("Mensagem vazia ou tipo não suportado.")
             log_step(db, queue_id, "EXTRACT", "skipped", "Mensagem sem texto")
             item.status = "completed"
@@ -101,8 +116,11 @@ def process_request(queue_id: int):
         log_step(db, queue_id, "STEP_1", "processing", "Identificando usuário")
         user = get_or_create_user(db, phone, push_name)
         
-        # Loga a mensagem do usuário
-        user_msg_log = save_chat_log(db, phone, message_text, "user")
+        # Loga a mensagem do usuário (COM NOVOS CAMPOS)
+        user_msg_log = save_chat_log(db, phone, message_text, "user", 
+                                     message_type=message_type, 
+                                     media_data=media_data, 
+                                     evolution_id=evo_id)
 
         if not user.is_client:
             # Lógica de Lead
@@ -127,11 +145,16 @@ def process_request(queue_id: int):
         # Passo 5
         log_step(db, queue_id, "AI_PROCESS", "processing", "Enviando para n8n")
         try:
-            ai_response = process_with_n8n(context, message_text, phone)
+            # Enviando para n8n com novos campos
+            ai_response = process_with_n8n(context, message_text, phone, 
+                                           message_type=message_type, 
+                                           media_data=media_data, 
+                                           message_id=evo_id)
             
             if ai_response:
                 # Passo 6 (Sucesso)
-                save_chat_log(db, phone, ai_response, "bot")
+                # Resposta da IA sempre é texto por enquanto, e gerada pelo bot (sem evo id externo)
+                save_chat_log(db, phone, ai_response, "bot", message_type="text") 
                 send_message(phone, ai_response)
                 log_step(db, queue_id, "RESPONSE", "success", "Resposta enviada")
                 item.status = "completed"

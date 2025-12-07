@@ -80,8 +80,16 @@ def get_chat_context(db: Session, user_phone: str, exclude_message_id: int = Non
             
     return formatted
 
-def save_chat_log(db: Session, phone: str, text: str, origin: str):
-    log = ChatLog(user_phone=phone, message_text=text, origin=origin)
+def save_chat_log(db: Session, phone: str, text: str, origin: str, 
+                  message_type: str = "text", media_data: str = None, evolution_id: str = None):
+    log = ChatLog(
+        user_phone=phone, 
+        message_text=text, 
+        origin=origin,
+        message_type=message_type,
+        media_data=media_data,
+        evolution_id=evolution_id
+    )
     db.add(log)
     db.commit()
     db.refresh(log)

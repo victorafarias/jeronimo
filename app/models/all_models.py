@@ -32,6 +32,10 @@ class ChatLog(Base):
     # Vamos estruturar: uma entrada para cada mensagem (user ou bot).
     origin = Column(String) # 'user', 'bot', 'system'
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    message_type = Column(String, nullable=True) # text, audio, image, etc.
+    media_data = Column(String, nullable=True) # Base64 ou URL (Text type seria melhor para base64 grande, mas String as vezes é limitado. SQLAlchemy String mapeia para VARCHAR/TEXT no pg). Vamos usar Text se necessario, mas String costuma ser OK. Para Base64 de AUDIO, melhor usar TEXT explícito se possível. 
+    # SQLAlchemy: String sem length vira TEXT no postgres.
+    evolution_id = Column(String, nullable=True) # ID da mensagem na Evolution (key.id)
 
 class RequestQueue(Base):
     __tablename__ = "request_queue"
