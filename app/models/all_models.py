@@ -10,9 +10,13 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     phone = Column(String, unique=True, index=True, nullable=False)
     name = Column(String, nullable=True)
+    # Alterado: Adicionada coluna email para armazenar e-mail do usuário
+    email = Column(String, nullable=True)
     is_client = Column(Boolean, default=False)
     is_blocked = Column(Boolean, default=False)
     is_compliant = Column(Boolean, default=True) # Adimplente
+    # Alterado: Adicionada coluna is_canceled para indicar se o usuário cancelou o serviço
+    is_canceled = Column(Boolean, default=False)
     # Alterado: DateTime SEM timezone para armazenar horário local de Brasília diretamente
     created_at = Column(DateTime, default=now_br)
 
