@@ -13,40 +13,40 @@ from app.core.config import settings
 def run_migration():
     """
     Adiciona as colunas 'email' e 'is_canceled' na tabela 'users'.
+    Usa try/except para evitar erros se a coluna já existir.
     """
     engine = create_engine(settings.DATABASE_URL)
     
     with engine.connect() as conn:
-        # Verifica se a coluna email já existe
-        result = conn.execute(text("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'users' AND column_name = 'email'
-        """))
+        # Alterado: Usando try/except em vez de verificar information_schema
+        # Isso é mais confiável para detectar se a coluna já existe
         
-        if not result.fetchone():
+        # Tenta adicionar coluna email
+        try:
             print("Adicionando coluna 'email' na tabela 'users'...")
             conn.execute(text("ALTER TABLE users ADD COLUMN email VARCHAR NULL"))
+            conn.commit()
             print("✅ Coluna 'email' adicionada com sucesso!")
-        else:
-            print("⚠️ Coluna 'email' já existe, pulando...")
+        except Exception as e:
+            if 'already exists' in str(e).lower() or 'duplicate column' in str(e).lower():
+                print("⚠️ Coluna 'email' já existe, pulando...")
+            else:
+                print(f"❌ Erro ao adicionar 'email': {e}")
         
-        # Verifica se a coluna is_canceled já existe
-        result = conn.execute(text("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'users' AND column_name = 'is_canceled'
-        """))
-        
-        if not result.fetchone():
+        # Tenta adicionar coluna is_canceled
+        try:
             print("Adicionando coluna 'is_canceled' na tabela 'users'...")
             conn.execute(text("ALTER TABLE users ADD COLUMN is_canceled BOOLEAN DEFAULT FALSE"))
+            conn.commit()
             print("✅ Coluna 'is_canceled' adicionada com sucesso!")
-        else:
-            print("⚠️ Coluna 'is_canceled' já existe, pulando...")
+        except Exception as e:
+            if 'already exists' in str(e).lower() or 'duplicate column' in str(e).lower():
+                print("⚠️ Coluna 'is_canceled' já existe, pulando...")
+            else:
+                print(f"❌ Erro ao adicionar 'is_canceled': {e}")
         
-        conn.commit()
-        print("\n🎉 Migração concluída com sucesso!")
+        print("\n🎉 Migração concluída!")
 
 if __name__ == "__main__":
     run_migration()
+
