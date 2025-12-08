@@ -77,5 +77,35 @@ def agent_manager_loop():
             logger.error(f"Erro no loop do gerenciador: {e}")
             time.sleep(5)
 
+def retry_manager_loop():
+    logger.info("Iniciando Agente de Recuperação (Retry)...")
+    while True:
+        try:
+            with SessionLocal() as db:
+                # Busca itens falhados com menos de 3 tentativas
+                failed_items = db.query(RequestQueue).filter(
+                    RequestQueue.status == "failed",
+                    RequestQueue.attempts < 3
+                ).all()
+                
+                if failed_items:
+                    logger.info(f"Encontrados {len(failed_items)} itens falhados para reprocessar.")
+                    for item in failed_items:
+                        item.status = "pending"
+                        item.attempts += 1
+                        logger.info(f"Re-enfileirando item {item.id} (Tentativa {item.attempts})")
+                    db.commit()
+                
+            time.sleep(120) # Verifica a cada 2 minutos
+            
+        except Exception as e:
+            logger.error(f"Erro no retry manager: {e}")
+            time.sleep(60)
+
 if __name__ == "__main__":
+    # Inicia o Retry Manager em uma thread separada (daemon para morrer com o processo)
+    retry_thread = threading.Thread(target=retry_manager_loop, daemon=True)
+    retry_thread.start()
+    
+    # Inicia o loop principal na thread principal
     agent_manager_loop()
