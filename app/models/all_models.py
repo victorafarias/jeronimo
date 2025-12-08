@@ -13,20 +13,20 @@ class User(Base):
     is_client = Column(Boolean, default=False)
     is_blocked = Column(Boolean, default=False)
     is_compliant = Column(Boolean, default=True) # Adimplente
-    # Alterado: default=now_br para usar timezone de Brasília (-3)
-    created_at = Column(DateTime(timezone=True), default=now_br)
+    # Alterado: DateTime SEM timezone para armazenar horário local de Brasília diretamente
+    created_at = Column(DateTime, default=now_br)
 
 class ChatLog(Base):
     __tablename__ = "chat_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=True) # Nullable temporário para migração, depois poderia ser False
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=True)
     message_text = Column(String, nullable=True) # Pergunta do Usuário
     response_text = Column(String, nullable=True) # Resposta da IA
-    sent_by_user = Column(Boolean, default=True) # Geralmente True agora, pois user inicia. Se False, foi bot proativo (not supported yet).
+    sent_by_user = Column(Boolean, default=True)
     
-    # Alterado: default=now_br para usar timezone de Brasília (-3)
-    timestamp = Column(DateTime(timezone=True), default=now_br)
+    # Alterado: DateTime SEM timezone para armazenar horário local de Brasília diretamente
+    timestamp = Column(DateTime, default=now_br)
     message_type = Column(String, nullable=True) 
     media_data = Column(String, nullable=True) 
     evolution_id = Column(String, nullable=True)
@@ -36,10 +36,10 @@ class RequestQueue(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     payload = Column(JSON, nullable=False)
-    status = Column(String, default="pending", index=True) # pending, processing, failed, completed
-    # Alterado: default=now_br para usar timezone de Brasília (-3)
-    created_at = Column(DateTime(timezone=True), default=now_br)
-    updated_at = Column(DateTime(timezone=True), onupdate=now_br)
+    status = Column(String, default="pending", index=True)
+    # Alterado: DateTime SEM timezone para armazenar horário local de Brasília diretamente
+    created_at = Column(DateTime, default=now_br)
+    updated_at = Column(DateTime, onupdate=now_br)
     attempts = Column(Integer, default=0)
 
 class ProcessingLog(Base):
@@ -50,6 +50,5 @@ class ProcessingLog(Base):
     step = Column(String)
     status = Column(String) # 'success', 'error'
     details = Column(String, nullable=True)
-    # Alterado: default=now_br para usar timezone de Brasília (-3)
-    timestamp = Column(DateTime(timezone=True), default=now_br)
-
+    # Alterado: DateTime SEM timezone para armazenar horário local de Brasília diretamente
+    timestamp = Column(DateTime, default=now_br)
