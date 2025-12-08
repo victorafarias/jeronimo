@@ -19,9 +19,15 @@ def process_with_n8n(chat_context: str, current_message: str, phone: str, user_n
     }
     
     try:
-        # Timeout de 60 segundos conforme requisito
+        # Log do payload (sem estourar o console com base64)
+        log_payload = payload.copy()
+        if log_payload.get("audio_base64"):
+            log_payload["audio_base64"] = "[BASE64_DATA_TRUNCATED]"
+        logger.info(f"Enviando payload para n8n: {log_payload}")
+
+        # Timeout de 3 minutos (180s) conforme solicitado
         logger.info("Enviando requisição para n8n...")
-        response = httpx.post(url, json=payload, timeout=60.0)
+        response = httpx.post(url, json=payload, timeout=180.0)
         
         if response.status_code == 200:
             try:
@@ -77,7 +83,7 @@ def process_with_n8n(chat_context: str, current_message: str, phone: str, user_n
             return None
             
     except httpx.TimeoutException:
-        logger.error("Timeout ao aguardar resposta do n8n (60s).")
+        logger.error("Timeout ao aguardar resposta do n8n (180s).")
         raise TimeoutError("n8n timeout")
     except Exception as e:
         logger.error(f"Erro de conexão com n8n: {e}")
