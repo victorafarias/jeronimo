@@ -89,8 +89,89 @@ with col_chart2:
 
 st.divider()
 
-# Tabela de Falhas Recentes
-st.subheader("⚠️ Falhas Recentes")
+# Tabela de Requisições Detalhada
+st.subheader("📋 Últimas Requisições (Detalhado)")
+
+# 1. Busca Requisições Recentes
+df_requests = pd.read_sql("SELECT id, payload, status, created_at, updated_at, attempts FROM request_queue ORDER BY created_at DESC LIMIT 50", engine)
+
+if not df_requests.empty:
+    # 2. Extração de Dados do Payload (Python Side)
+    def extract_metadata(row):
+        payload = row['payload']
+        if not payload: return pd.Series([None, None])
+        
+        # Tenta extrair evolution id e phone
+        # Path: body -> data -> key -> id ou data -> key -> id
+        try:
+            body = payload.get("body", {})
+            data = body.get("data") if body else payload.get("data")
+            if not data: return pd.Series([None, None])
+            
+            key = data.get("key", {})
+            evo_id = key.get("id")
+            remote_jid = key.get("remoteJid", "")
+            phone = remote_jid.split("@")[0] if remote_jid else None
+            
+            return pd.Series([evo_id, phone])
+        except:
+            return pd.Series([None, None])
+
+    df_requests[['evolution_id', 'user_phone']] = df_requests.apply(extract_metadata, axis=1)
+
+    # 3. Busca Dados Relacionados (ChatLogs e Users)
+    # Pegamos ids únicos para filtrar query (otimização)
+    unique_phones = df_requests['user_phone'].dropna().unique().tolist()
+    unique_evo_ids = df_requests['evolution_id'].dropna().unique().tolist()
+
+    df_users = pd.DataFrame()
+    df_logs = pd.DataFrame()
+
+    if unique_phones:
+        placeholders = ','.join([f"'{p}'" for p in unique_phones])
+        df_users = pd.read_sql(f"SELECT phone as user_phone, name, is_client, is_blocked, is_compliant FROM users WHERE phone IN ({placeholders})", engine)
+
+    if unique_evo_ids:
+        placeholders = ','.join([f"'{eid}'" for eid in unique_evo_ids])
+        df_logs = pd.read_sql(f"SELECT evolution_id, message_text, response_text FROM chat_logs WHERE evolution_id IN ({placeholders})", engine)
+
+    # 4. Merge dos Dados
+    # Merge Requests + Users
+    df_final = pd.merge(df_requests, df_users, on='user_phone', how='left')
+    
+    # Merge + ChatLogs
+    df_final = pd.merge(df_final, df_logs, on='evolution_id', how='left')
+
+    # 5. Calculo de Tempo (Duration)
+    # Se updated_at existe, duration = updated - created. Se não, "Em andamento"
+    def calc_duration(row):
+        if pd.isna(row['updated_at']):
+            return "Em andamento"
+        delta = row['updated_at'] - row['created_at']
+        return str(delta).split('.')[0] # Remove microsegundos
+
+    df_final['duration'] = df_final.apply(calc_duration, axis=1)
+
+    # 6. Seleção e Renomeação de Colunas
+    df_display = df_final[[
+        'user_phone', 'name', 'is_client', 'is_blocked', 'is_compliant',
+        'message_text', 'response_text', 'duration', 'status'
+    ]].copy()
+
+    df_display.columns = [
+        'Telefone', 'Nome', 'Cliente?', 'Bloqueado?', 'Adimplente?',
+        'Mensagem Usuário', 'Resposta IA', 'Tempo Processamento', 'Status'
+    ]
+
+    st.dataframe(df_display, use_container_width=True)
+
+else:
+    st.info("Nenhuma requisição encontrada.")
+
+st.divider()
+
+# Tabela de Falhas Recentes (Legado/Técnico)
+st.subheader("⚠️ Logs de Erros Técnicos")
 df_failures = pd.read_sql("""
     SELECT q.id, q.created_at, q.attempts, l.details as error_details
     FROM request_queue q
