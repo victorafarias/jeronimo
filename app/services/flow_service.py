@@ -42,14 +42,37 @@ def process_lead_logic(db: Session, user: User, message_text: str):
         return True # Segue fluxo
 
 def check_block_and_compliant(db: Session, user: User):
-    # Passo 2
-    if user.is_blocked:
-        send_message(user.phone, "Atendimento indisponível temporariamente. (Bloqueio)")
+    """
+    Verifica se o usuário pode continuar o fluxo.
+    
+    Validações (em ordem):
+    1. is_canceled: Se TRUE → bloqueia (assinatura cancelada)
+    2. is_blocked: Se TRUE → bloqueia (usuário bloqueado)
+    3. is_compliant: Se FALSE ou NULL → bloqueia (inadimplente)
+    
+    Returns:
+        True se pode continuar, False se deve interromper
+    """
+    
+    # Alterado: Verificação de is_canceled (nova validação)
+    # NULL ou FALSE = continua fluxo; TRUE = interrompe
+    if user.is_canceled == True:
+        send_message(user.phone, "Sua assinatura foi cancelada. Renove sua assinatura no seu painel da Kiwify para acessar o Jerônimo novamente")
+        logger.info(f"Usuário {user.phone} bloqueado: assinatura cancelada")
         return False
-        
-    # Passo 3
-    if not user.is_compliant:
+    
+    # Alterado: Verificação de is_blocked
+    # NULL ou FALSE = continua fluxo; TRUE = interrompe
+    if user.is_blocked == True:
+        send_message(user.phone, "Atendimento indisponível temporariamente. (Bloqueio)")
+        logger.info(f"Usuário {user.phone} bloqueado: is_blocked=True")
+        return False
+    
+    # Alterado: Verificação de is_compliant
+    # NULL ou FALSE = inadimplente (interrompe); TRUE = adimplente (continua)
+    if user.is_compliant != True:  # NULL ou FALSE → inadimplente
         send_message(user.phone, "Identificamos uma pendência. Entre em contato com o financeiro.")
+        logger.info(f"Usuário {user.phone} bloqueado: inadimplente (is_compliant={user.is_compliant})")
         return False
         
     return True
