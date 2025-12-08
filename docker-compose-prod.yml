@@ -26,7 +26,7 @@ services:
   dashboard:
     build: .
     container_name: jeronimo_dashboard
-    command: streamlit run dashboard/app.py --server.port 8501 --server.address 0.0.0.0
+    command: streamlit run dashboard/dashboard.py --server.port 8501 --server.address 0.0.0.0
     volumes:
       - .:/app
     ports:
