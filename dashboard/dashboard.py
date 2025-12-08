@@ -145,7 +145,8 @@ if not df_requests.empty:
 
     if unique_evo_ids:
         placeholders = ','.join([f"'{eid}'" for eid in unique_evo_ids])
-        df_logs = pd.read_sql(f"SELECT evolution_id, message_text, response_text FROM chat_logs WHERE evolution_id IN ({placeholders})", engine)
+        # Alterado: Adicionado message_type para exibir tipo de mensagem (Áudio/Texto)
+        df_logs = pd.read_sql(f"SELECT evolution_id, message_text, response_text, message_type FROM chat_logs WHERE evolution_id IN ({placeholders})", engine)
 
     # 4. Merge dos Dados
     # Merge Requests + Users
@@ -164,15 +165,37 @@ if not df_requests.empty:
 
     df_final['duration'] = df_final.apply(calc_duration, axis=1)
 
+    # Alterado: Formatar data de criação para exibição no timezone -3
+    def format_created_at(row):
+        if pd.isna(row['created_at']):
+            return ""
+        dt = row['created_at']
+        # Formata como dd/mm/yyyy HH:MM:SS
+        return dt.strftime("%d/%m/%Y %H:%M:%S")
+    
+    df_final['data_formatada'] = df_final.apply(format_created_at, axis=1)
+
+    # Alterado: Mapear tipo de mensagem para exibição amigável
+    def format_message_type(row):
+        msg_type = row.get('message_type', None)
+        if pd.isna(msg_type) or not msg_type:
+            return "Texto"
+        if 'audio' in str(msg_type).lower():
+            return "Áudio"
+        return "Texto"
+    
+    df_final['tipo_mensagem'] = df_final.apply(format_message_type, axis=1)
+
     # 6. Seleção e Renomeação de Colunas
+    # Alterado: Adicionadas colunas 'tipo_mensagem' (após Adimplente) e 'data_formatada' (após Status)
     df_display = df_final[[
         'user_phone', 'name', 'is_client', 'is_blocked', 'is_compliant',
-        'message_text', 'response_text', 'duration', 'status'
+        'tipo_mensagem', 'message_text', 'response_text', 'duration', 'status', 'data_formatada'
     ]].copy()
 
     df_display.columns = [
         'Telefone', 'Nome', 'Cliente?', 'Bloqueado?', 'Adimplente?',
-        'Mensagem Usuário', 'Resposta IA', 'Tempo Processamento', 'Status'
+        'Tipo de Mensagem', 'Mensagem Usuário', 'Resposta IA', 'Tempo Processamento', 'Status', 'Data'
     ]
 
     st.dataframe(df_display, use_container_width=True)
