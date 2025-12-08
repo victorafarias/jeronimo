@@ -1,6 +1,8 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, JSON
-from sqlalchemy.sql import func
+# Alterado: Removido func.now() e adicionado now_br do módulo timezone
+# func.now() é executado pelo banco (UTC), now_br é executado pelo Python (Brasília -3)
 from app.core.database import Base
+from app.core.timezone import now_br
 
 class User(Base):
     __tablename__ = "users"
@@ -11,7 +13,8 @@ class User(Base):
     is_client = Column(Boolean, default=False)
     is_blocked = Column(Boolean, default=False)
     is_compliant = Column(Boolean, default=True) # Adimplente
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    # Alterado: default=now_br para usar timezone de Brasília (-3)
+    created_at = Column(DateTime(timezone=True), default=now_br)
 
 class ChatLog(Base):
     __tablename__ = "chat_logs"
@@ -22,7 +25,8 @@ class ChatLog(Base):
     response_text = Column(String, nullable=True) # Resposta da IA
     sent_by_user = Column(Boolean, default=True) # Geralmente True agora, pois user inicia. Se False, foi bot proativo (not supported yet).
     
-    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    # Alterado: default=now_br para usar timezone de Brasília (-3)
+    timestamp = Column(DateTime(timezone=True), default=now_br)
     message_type = Column(String, nullable=True) 
     media_data = Column(String, nullable=True) 
     evolution_id = Column(String, nullable=True)
@@ -33,8 +37,9 @@ class RequestQueue(Base):
     id = Column(Integer, primary_key=True, index=True)
     payload = Column(JSON, nullable=False)
     status = Column(String, default="pending", index=True) # pending, processing, failed, completed
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    # Alterado: default=now_br para usar timezone de Brasília (-3)
+    created_at = Column(DateTime(timezone=True), default=now_br)
+    updated_at = Column(DateTime(timezone=True), onupdate=now_br)
     attempts = Column(Integer, default=0)
 
 class ProcessingLog(Base):
@@ -45,4 +50,6 @@ class ProcessingLog(Base):
     step = Column(String)
     status = Column(String) # 'success', 'error'
     details = Column(String, nullable=True)
-    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    # Alterado: default=now_br para usar timezone de Brasília (-3)
+    timestamp = Column(DateTime(timezone=True), default=now_br)
+
