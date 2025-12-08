@@ -14,9 +14,19 @@ from app.core.config import settings
 st.set_page_config(page_title="Jeronimo Dashboard", layout="wide")
 
 # Conexão DB
+# Alterado: Configuração de pool para evitar erro "SSL SYSCALL error: EOF detected"
+# - pool_pre_ping: Verifica se a conexão está ativa antes de usar
+# - pool_recycle: Recicla conexões a cada 5 minutos para evitar conexões ociosas
+# - pool_size: Número máximo de conexões no pool
 @st.cache_resource
 def get_connection():
-    return create_engine(settings.DATABASE_URL)
+    return create_engine(
+        settings.DATABASE_URL,
+        pool_pre_ping=True,  # Verifica conexão antes de usar
+        pool_recycle=300,    # Recicla conexões a cada 5 minutos
+        pool_size=5,         # Tamanho do pool
+        max_overflow=10      # Conexões extras permitidas
+    )
 
 engine = get_connection()
 
