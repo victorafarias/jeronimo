@@ -96,10 +96,12 @@ def save_chat_log(db: Session, user_id: int, text: str, sent_by_user: bool = Tru
     db.refresh(log)
     return log
 
-def update_chat_log_with_response(db: Session, log_id: int, response: str):
+def update_chat_log_with_response(db: Session, log_id: int, response: str, transcription: str = None):
     log = db.query(ChatLog).filter(ChatLog.id == log_id).first()
     if log:
         log.response_text = response
+        if transcription:
+            log.message_text = transcription
         db.commit()
         db.refresh(log)
     return log

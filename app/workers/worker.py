@@ -83,7 +83,7 @@ def process_request(queue_id: int):
         media_data = None
         if is_audio:
              if not message_text:
-                message_text = "[ÁUDIO RECEBIDO]" # Placeholder para log
+                message_text = "" # Placeholder removido (será preenchido pós-transcrição)
              
              # Tentar extrair base64 do payload (requer configuração includeBase64OnData na Evolution)
              audio_msg = msg_obj.get("audioMessage", {})
@@ -118,6 +118,7 @@ def process_request(queue_id: int):
         user = get_or_create_user(db, phone, push_name)
         
         # Loga a mensagem do usuário (COM NOVOS CAMPOS E FK)
+        # Se for audio, message_text vai vazio. Será atualizado depois.
         user_msg_log = save_chat_log(db, user.id, message_text, sent_by_user=True, 
                                      message_type=message_type, 
                                      media_data=media_data, 
@@ -147,23 +148,34 @@ def process_request(queue_id: int):
         log_step(db, queue_id, "AI_PROCESS", "processing", "Enviando para n8n")
         try:
             # Enviando para n8n com novos campos e NOME DO USUARIO
-            ai_response = process_with_n8n(context, message_text, phone, 
+            ai_response_data = process_with_n8n(context, message_text, phone, 
                                            user_name=user.name,
                                            message_type=message_type, 
                                            media_data=media_data, 
                                            message_id=evo_id)
             
-            if ai_response:
-                # Passo 6 (Sucesso)
-                # ATUALIZA o log original com a resposta
-                update_chat_log_with_response(db, user_msg_log.id, ai_response) 
+            if ai_response_data and isinstance(ai_response_data, dict):
+                ai_text = ai_response_data.get("respostaIA")
+                user_transcription = ai_response_data.get("perguntaUsuario")
                 
-                send_message(phone, ai_response)
+                if not ai_text:
+                     raise Exception("Campo 'respostaIA' vazio ou nulo da IA")
+
+                # Passo 6 (Sucesso)
+                # Se for áudio, atualizamos o texto da mensagem original com a transcrição (perguntaUsuario)
+                transcription_to_save = None
+                if is_audio and user_transcription:
+                    transcription_to_save = user_transcription
+                
+                # ATUALIZA o log original com a resposta e transcrição (se houver)
+                update_chat_log_with_response(db, user_msg_log.id, ai_text, transcription=transcription_to_save) 
+                
+                send_message(phone, ai_text)
                 log_step(db, queue_id, "RESPONSE", "success", "Resposta enviada")
                 item.status = "completed"
             else:
                 # Falha genérica n8n
-                raise Exception("Resposta nula do n8n")
+                raise Exception("Resposta inválida ou nula do n8n")
                 
         except TimeoutError:
             log_step(db, queue_id, "TIMEOUT", "error", "n8n não respondeu em 60s")

@@ -28,31 +28,50 @@ def process_with_n8n(chat_context: str, current_message: str, phone: str, user_n
                 data = response.json()
                 logger.info(f"Resposta bruta n8n: {data}") # Debug temporário
                 
-                # Caso 1: Retorno complexo estilo Evolution (Lista de objetos)
+                # Caso 1: Retorno Lista (Evolution/n8n padrão as vezes retorna lista)
                 if isinstance(data, list) and len(data) > 0:
                     first_item = data[0]
-                    # Tenta extrair de message.conversation
-                    msg = first_item.get("message", {})
-                    if isinstance(msg, dict):
-                         return msg.get("conversation") or msg.get("extendedTextMessage", {}).get("text")
-                         
-                    # Tenta extrair textMessage.text (outro formato possível)
-                    text_msg = first_item.get("textMessage", {})
-                    if text_msg:
-                        return text_msg.get("text")
+                    # Tenta pegar campos estruturados se existirem
+                    if isinstance(first_item, dict):
+                        # Se vier estruturado com pergunta/resposta
+                        if "respostaIA" in first_item:
+                             return {
+                                 "respostaIA": first_item.get("respostaIA"), 
+                                 "perguntaUsuario": first_item.get("perguntaUsuario")
+                             }
                         
-                    return str(first_item) # Fallback
+                        # Fallback: Tenta extrair texto estilo Evolution message
+                        msg = first_item.get("message", {})
+                        text_val = None
+                        if isinstance(msg, dict):
+                             text_val = msg.get("conversation") or msg.get("extendedTextMessage", {}).get("text")
+                        
+                        if not text_val:
+                             text_msg = first_item.get("textMessage", {})
+                             if text_msg:
+                                text_val = text_msg.get("text")
+                        
+                        return {"respostaIA": text_val or str(first_item), "perguntaUsuario": None}
 
-                # Caso 2: Retorno simples (Dict)
+                # Caso 2: Retorno Dict
                 if isinstance(data, dict):
-                    # Formatos comuns n8n
-                    return data.get("output") or data.get("text") or data.get("resposta") or \
-                           data.get("message", {}).get("conversation") # Caso venha um objeto Evolution único
+                    # Se tiver os campos esperados
+                    if "respostaIA" in data:
+                        return {
+                            "respostaIA": data.get("respostaIA"),
+                            "perguntaUsuario": data.get("perguntaUsuario")
+                        }
+
+                    # Formatos comuns genéricos
+                    text_val = data.get("output") or data.get("text") or data.get("resposta") or \
+                               data.get("message", {}).get("conversation")
+                    
+                    return {"respostaIA": text_val, "perguntaUsuario": None}
                            
-                return response.text # Fallback texto puro
+                return {"respostaIA": response.text, "perguntaUsuario": None}
                 
             except ValueError:
-                return response.text
+                return {"respostaIA": response.text, "perguntaUsuario": None}
         else:
             logger.error(f"Erro n8n: {response.status_code} - {response.text}")
             return None
