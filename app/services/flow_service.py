@@ -1,7 +1,9 @@
 from sqlalchemy.orm import Session
 from app.models.all_models import User, ChatLog
 from app.services.evolution_service import send_message
-from datetime import datetime, timedelta
+# Alterado: Importando now_br do módulo timezone para usar horário de Brasília
+from datetime import timedelta
+from app.core.timezone import now_br
 import logging
 
 logger = logging.getLogger("UserFlow")
@@ -54,7 +56,8 @@ def check_block_and_compliant(db: Session, user: User):
 
 def get_chat_context(db: Session, user_id: int, exclude_message_id: int = None):
     # Passo 4: Conversas nos últimos 30 min
-    limit_time = datetime.now() - timedelta(minutes=30)
+    # Alterado: Usando now_br() para garantir timezone de Brasília (-3)
+    limit_time = now_br() - timedelta(minutes=30)
     
     query = db.query(ChatLog).filter(
         ChatLog.user_id == user_id,

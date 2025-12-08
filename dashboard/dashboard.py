@@ -18,6 +18,7 @@ st.set_page_config(page_title="Jeronimo Dashboard", layout="wide")
 # - pool_pre_ping: Verifica se a conexão está ativa antes de usar
 # - pool_recycle: Recicla conexões a cada 5 minutos para evitar conexões ociosas
 # - pool_size: Número máximo de conexões no pool
+# Alterado: Adicionado timezone America/Sao_Paulo para exibir datas no horário de Brasília (-3)
 @st.cache_resource
 def get_connection():
     return create_engine(
@@ -25,7 +26,8 @@ def get_connection():
         pool_pre_ping=True,  # Verifica conexão antes de usar
         pool_recycle=300,    # Recicla conexões a cada 5 minutos
         pool_size=5,         # Tamanho do pool
-        max_overflow=10      # Conexões extras permitidas
+        max_overflow=10,     # Conexões extras permitidas
+        connect_args={"options": "-c timezone=America/Sao_Paulo"}  # Timezone Brasília
     )
 
 engine = get_connection()
