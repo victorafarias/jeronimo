@@ -63,6 +63,9 @@ def check_password():
         return True
 
     st.subheader("Login")
+    # DEBUG TEMPORARIO
+    st.warning(f"DEBUG: User='{settings.DASHBOARD_USER}' Pass='{settings.DASHBOARD_PASSWORD}'")
+    
     user = st.text_input("Usuário")
     pwd = st.text_input("Senha", type="password")
     
