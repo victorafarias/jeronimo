@@ -106,11 +106,9 @@ def reset_filters():
     st.session_state['data_inicial'] = None
     st.session_state['data_final'] = None
     
-    # Remove as chaves dos widgets para resetar para o valor default (None/Hoje)
-    if 'input_inicio' in st.session_state:
-        del st.session_state['input_inicio']
-    if 'input_fim' in st.session_state:
-        del st.session_state['input_fim']
+    # Define as chaves dos widgets como None para limpar visualmente
+    st.session_state['input_inicio'] = None
+    st.session_state['input_fim'] = None
 
 init_filters()
 
