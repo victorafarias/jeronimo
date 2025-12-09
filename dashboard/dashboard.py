@@ -85,22 +85,23 @@ with col_header:
     st.title("🚀 Jeronimo Dashboard")
 
 # Gerenciamento de Estado dos Filtros
-# Usamos as mesmas chaves do widget (input_inicio/input_fim) diretamente no session_state
+# Usamos chaves separadas para o estado interno (data_inicio/data_fim)
+# Os widgets usam essas chaves via value, sem key própria
 def init_filters():
-    if 'input_inicio' not in st.session_state:
-        st.session_state['input_inicio'] = None
-    if 'input_fim' not in st.session_state:
-        st.session_state['input_fim'] = None
+    if 'data_inicio' not in st.session_state:
+        st.session_state['data_inicio'] = None
+    if 'data_fim' not in st.session_state:
+        st.session_state['data_fim'] = None
 
 def set_date_range(days):
     """Define o intervalo de datas baseado na quantidade de dias."""
-    st.session_state['input_fim'] = date.today()
-    st.session_state['input_inicio'] = date.today() - timedelta(days=days)
+    st.session_state['data_fim'] = date.today()
+    st.session_state['data_inicio'] = date.today() - timedelta(days=days)
 
 def reset_filters():
     """Limpa os filtros de data."""
-    st.session_state['input_inicio'] = None
-    st.session_state['input_fim'] = None
+    st.session_state['data_inicio'] = None
+    st.session_state['data_fim'] = None
 
 init_filters()
 
@@ -108,45 +109,44 @@ with col_filters:
     st.subheader("Filtros de Data")
     c1, c2, c3, c4 = st.columns([2, 2, 1, 1])
     
-    # Inputs de Data - usando diretamente o key como referência do session_state
-    # O Streamlit sincroniza automaticamente o valor do widget com session_state[key]
+    # Inputs de Data - sem key própria, usando value do session_state
+    # Quando o usuário altera manualmente, capturamos o valor retornado
     with c1:
-        st.date_input(
+        data_inicio_selecionada = st.date_input(
             "Início", 
-            value=st.session_state['input_inicio'], 
-            key='input_inicio', 
+            value=st.session_state['data_inicio'], 
             format="DD/MM/YYYY"
         )
+        # Atualiza o session_state se o usuário alterou manualmente
+        if data_inicio_selecionada != st.session_state['data_inicio']:
+            st.session_state['data_inicio'] = data_inicio_selecionada
     
     with c2:
-        st.date_input(
+        data_fim_selecionada = st.date_input(
             "Fim", 
-            value=st.session_state['input_fim'], 
-            key='input_fim', 
+            value=st.session_state['data_fim'], 
             format="DD/MM/YYYY"
         )
+        # Atualiza o session_state se o usuário alterou manualmente
+        if data_fim_selecionada != st.session_state['data_fim']:
+            st.session_state['data_fim'] = data_fim_selecionada
     
     with c3:
         st.write("")  # Espaçamento para alinhar com os inputs
         st.write("") 
-        if st.button("7 Dias"):
-            set_date_range(7)
-            st.rerun()
+        # Usando on_click para executar a função ANTES da renderização
+        st.button("7 Dias", on_click=set_date_range, args=(7,))
             
     with c4:
         st.write("")
         st.write("")
-        if st.button("30 Dias"):
-            set_date_range(30)
-            st.rerun()
+        st.button("30 Dias", on_click=set_date_range, args=(30,))
 
-    if st.button("Limpar Filtros"):
-        reset_filters()
-        st.rerun()
+    st.button("Limpar Filtros", on_click=reset_filters)
 
-# Variáveis para uso nas queries - lendo diretamente das chaves dos widgets
-date_start = st.session_state['input_inicio']
-date_end = st.session_state['input_fim']
+# Variáveis para uso nas queries
+date_start = st.session_state['data_inicio']
+date_end = st.session_state['data_fim']
 
 st.divider()
 
