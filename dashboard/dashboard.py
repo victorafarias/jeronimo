@@ -128,20 +128,14 @@ with col_filters:
     with c3:
         st.write("") # Espaçamento
         st.write("") 
-        if st.button("7 Dias"):
-            set_date_range(7)
-            st.rerun()
+        st.button("7 Dias", on_click=set_date_range, args=(7,))
             
     with c4:
         st.write("")
         st.write("")
-        if st.button("30 Dias"):
-            set_date_range(30)
-            st.rerun()
+        st.button("30 Dias", on_click=set_date_range, args=(30,))
 
-    if st.button("Limpar Filtros"):
-        reset_filters()
-        st.rerun()
+    st.button("Limpar Filtros", on_click=reset_filters)
 
 # Variáveis para uso nas queries
 date_start = st.session_state['data_inicial']
@@ -372,23 +366,7 @@ else:
 
 st.divider()
 
-# Tabela de Falhas Recentes (Legado/Técnico)
-st.subheader("⚠️ Logs de Erros Técnicos")
-# Alterado: Ordenação por ID DESC (maior para menor)
-df_failures = pd.read_sql("""
-    SELECT q.id, q.created_at, q.attempts, l.details as error_details
-    FROM request_queue q
-    LEFT JOIN processing_logs l ON q.id = l.queue_id AND l.status = 'error'
-    WHERE q.status = 'failed'
-    ORDER BY q.id DESC
-    LIMIT 10
-""", engine)
 
-# Alterado: Renomeando colunas para nomes amigáveis em português
-if not df_failures.empty:
-    df_failures.columns = ['id', 'Data', 'Tentativas', 'Detalhes do Erro']
-
-st.dataframe(df_failures, use_container_width=True)
 
 if st.button("Atualizar Dados"):
     st.rerun()
