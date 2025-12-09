@@ -85,23 +85,32 @@ with col_header:
     st.title("🚀 Jeronimo Dashboard")
 
 # Gerenciamento de Estado dos Filtros
-# Usamos chaves separadas para o estado interno (data_inicio/data_fim)
-# Os widgets usam essas chaves via value, sem key própria
 def init_filters():
-    if 'data_inicio' not in st.session_state:
-        st.session_state['data_inicio'] = None
-    if 'data_fim' not in st.session_state:
-        st.session_state['data_fim'] = None
+    if 'data_inicial' not in st.session_state:
+        st.session_state['data_inicial'] = None
+    if 'data_final' not in st.session_state:
+        st.session_state['data_final'] = None
 
 def set_date_range(days):
-    """Define o intervalo de datas baseado na quantidade de dias."""
-    st.session_state['data_fim'] = date.today()
-    st.session_state['data_inicio'] = date.today() - timedelta(days=days)
+    d_final = date.today()
+    d_inicial = date.today() - timedelta(days=days)
+    
+    st.session_state['data_final'] = d_final
+    st.session_state['data_inicial'] = d_inicial
+    
+    # Atualiza as chaves dos widgets para refletir na UI
+    st.session_state['input_fim'] = d_final
+    st.session_state['input_inicio'] = d_inicial
 
 def reset_filters():
-    """Limpa os filtros de data."""
-    st.session_state['data_inicio'] = None
-    st.session_state['data_fim'] = None
+    st.session_state['data_inicial'] = None
+    st.session_state['data_final'] = None
+    
+    # Remove as chaves dos widgets para resetar para o valor default (None/Hoje)
+    if 'input_inicio' in st.session_state:
+        del st.session_state['input_inicio']
+    if 'input_fim' in st.session_state:
+        del st.session_state['input_fim']
 
 init_filters()
 
@@ -109,44 +118,34 @@ with col_filters:
     st.subheader("Filtros de Data")
     c1, c2, c3, c4 = st.columns([2, 2, 1, 1])
     
-    # Inputs de Data - sem key própria, usando value do session_state
-    # Quando o usuário altera manualmente, capturamos o valor retornado
-    with c1:
-        data_inicio_selecionada = st.date_input(
-            "Início", 
-            value=st.session_state['data_inicio'], 
-            format="DD/MM/YYYY"
-        )
-        # Atualiza o session_state se o usuário alterou manualmente
-        if data_inicio_selecionada != st.session_state['data_inicio']:
-            st.session_state['data_inicio'] = data_inicio_selecionada
-    
-    with c2:
-        data_fim_selecionada = st.date_input(
-            "Fim", 
-            value=st.session_state['data_fim'], 
-            format="DD/MM/YYYY"
-        )
-        # Atualiza o session_state se o usuário alterou manualmente
-        if data_fim_selecionada != st.session_state['data_fim']:
-            st.session_state['data_fim'] = data_fim_selecionada
+    # Inputs de Data (interagem com session_state)
+    # Alterado: Formato de data para DD/MM/YYYY
+    start_val = st.date_input("Início", value=st.session_state['data_inicial'], key='input_inicio', format="DD/MM/YYYY",
+                              on_change=lambda: st.session_state.update({'data_inicial': st.session_state.input_inicio}))
+    end_val = st.date_input("Fim", value=st.session_state['data_final'], key='input_fim', format="DD/MM/YYYY",
+                            on_change=lambda: st.session_state.update({'data_final': st.session_state.input_fim}))
     
     with c3:
-        st.write("")  # Espaçamento para alinhar com os inputs
+        st.write("") # Espaçamento
         st.write("") 
-        # Usando on_click para executar a função ANTES da renderização
-        st.button("7 Dias", on_click=set_date_range, args=(7,))
+        if st.button("7 Dias"):
+            set_date_range(7)
+            st.rerun()
             
     with c4:
         st.write("")
         st.write("")
-        st.button("30 Dias", on_click=set_date_range, args=(30,))
+        if st.button("30 Dias"):
+            set_date_range(30)
+            st.rerun()
 
-    st.button("Limpar Filtros", on_click=reset_filters)
+    if st.button("Limpar Filtros"):
+        reset_filters()
+        st.rerun()
 
 # Variáveis para uso nas queries
-date_start = st.session_state['data_inicio']
-date_end = st.session_state['data_fim']
+date_start = st.session_state['data_inicial']
+date_end = st.session_state['data_final']
 
 st.divider()
 
