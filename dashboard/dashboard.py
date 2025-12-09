@@ -169,14 +169,10 @@ if not df_requests.empty:
         if pd.isna(row['updated_at']):
             return "Em andamento"
         delta = row['updated_at'] - row['created_at']
-        # Remove "0 days " e microsegundos, mantém apenas HH:MM:SS
+        # Remove microsegundos primeiro
         duration_str = str(delta).split('.')[0]
-        if 'day' in duration_str:
-            # Se tiver dias, extrai só a parte de tempo
-            parts = duration_str.split(', ')
-            if len(parts) > 1:
-                return parts[1]  # Retorna só a parte HH:MM:SS
-            return duration_str
+        # Alterado: Remove "0 days " usando replace (formato: "0 days 00:00:46")
+        duration_str = duration_str.replace("0 days ", "")
         return duration_str
 
     df_final['duration'] = df_final.apply(calc_duration, axis=1)
@@ -230,6 +226,11 @@ df_failures = pd.read_sql("""
     ORDER BY q.id DESC
     LIMIT 10
 """, engine)
+
+# Alterado: Renomeando colunas para nomes amigáveis em português
+if not df_failures.empty:
+    df_failures.columns = ['id', 'Data', 'Tentativas', 'Detalhes do Erro']
+
 st.dataframe(df_failures, use_container_width=True)
 
 if st.button("Atualizar Dados"):
