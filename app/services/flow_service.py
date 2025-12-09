@@ -27,16 +27,27 @@ def get_or_create_user(db: Session, phone: str, push_name: str):
     return user
 
 def process_lead_logic(db: Session, user: User, message_text: str):
-    # Regra: Lead tem limite de 3 respostas da IA.
+    """
+    Regra: Lead (is_client=False) tem limite de 3 respostas da IA.
+    Na 4ª requisição, recebe mensagem de limite atingido.
     
+    Alterado: Conta registros onde response_text NÃO é nulo,
+    pois a resposta da IA é salva no mesmo registro da mensagem do usuário.
+    """
+    
+    # Alterado: Conta mensagens que JÁ RECEBERAM resposta da IA
+    # (response_text não é nulo indica que a IA já respondeu)
     bot_responses = db.query(ChatLog).filter(
         ChatLog.user_id == user.id, 
-        ChatLog.sent_by_user == False
+        ChatLog.response_text != None  # Conta apenas onde a IA já respondeu
     ).count()
+    
+    logger.info(f"Lead {user.phone}: já tem {bot_responses} respostas da IA (limite: 3)")
     
     # Se JÁ TIVER 3 ou mais respostas, bloqueia.
     if bot_responses >= 3:
         send_message(user.phone, "Você atingiu o limite de interações gratuitas. Faça sua assinatura em https://jeronimo.app.br/.")
+        logger.info(f"Lead {user.phone} bloqueado: atingiu limite de 3 respostas gratuitas")
         return False # Interrompe fluxo
     else:
         return True # Segue fluxo
