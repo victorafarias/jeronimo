@@ -59,19 +59,15 @@ def check_password():
     if "password_correct" not in st.session_state:
         st.session_state["password_correct"] = False
 
+    if st.session_state["password_correct"]:
+        return True
+
     st.subheader("Login")
-    
     user = st.text_input("Usuário")
     pwd = st.text_input("Senha", type="password")
     
     if st.button("Entrar"):
-        # Limpa espaços em branco e compara
-        u_input = user.strip()
-        p_input = pwd.strip()
-        u_conf = settings.DASHBOARD_USER.strip()
-        p_conf = settings.DASHBOARD_PASSWORD.strip()
-        
-        if u_input == u_conf and p_input == p_conf:
+        if user == settings.DASHBOARD_USER and pwd == settings.DASHBOARD_PASSWORD:
             st.session_state["password_correct"] = True
             st.rerun()
         else:
@@ -132,14 +128,20 @@ with col_filters:
     with c3:
         st.write("") # Espaçamento
         st.write("") 
-        st.button("7 Dias", on_click=set_date_range, args=(7,))
+        if st.button("7 Dias"):
+            set_date_range(7)
+            st.rerun()
             
     with c4:
         st.write("")
         st.write("")
-        st.button("30 Dias", on_click=set_date_range, args=(30,))
+        if st.button("30 Dias"):
+            set_date_range(30)
+            st.rerun()
 
-    st.button("Limpar Filtros", on_click=reset_filters)
+    if st.button("Limpar Filtros"):
+        reset_filters()
+        st.rerun()
 
 # Variáveis para uso nas queries
 date_start = st.session_state['data_inicial']
