@@ -14,68 +14,7 @@ from app.core.config import settings
 # Configuração da Página
 st.set_page_config(page_title="Jeronimo Dashboard", layout="wide")
 
-# ... existing code ...
 
-# --- Dashboard Home ---
-# Layout de Cabeçalho e Filtros
-col_header, col_filters, col_auth = st.columns([2, 3, 1])
-
-with col_header:
-    st.title("🚀 Jeronimo Dashboard")
-
-# Gerenciamento de Estado dos Filtros
-def init_filters():
-    if 'data_inicial' not in st.session_state:
-        st.session_state['data_inicial'] = None
-    if 'data_final' not in st.session_state:
-        st.session_state['data_final'] = None
-
-def set_date_range(days):
-    st.session_state['data_final'] = date.today()
-    st.session_state['data_inicial'] = date.today() - timedelta(days=days)
-
-def reset_filters():
-    st.session_state['data_inicial'] = None
-    st.session_state['data_final'] = None
-
-init_filters()
-
-with col_filters:
-    st.subheader("Filtros de Data")
-    c1, c2, c3, c4 = st.columns([2, 2, 1, 1])
-    
-    # Inputs de Data (interagem com session_state)
-    start_val = st.date_input("Início", value=st.session_state['data_inicial'], key='input_inicio', 
-                              on_change=lambda: st.session_state.update({'data_inicial': st.session_state.input_inicio}))
-    end_val = st.date_input("Fim", value=st.session_state['data_final'], key='input_fim',
-                            on_change=lambda: st.session_state.update({'data_final': st.session_state.input_fim}))
-    
-    # Atualiza state se o input mudar (redundância garantida pelo callback on_change, mas explicitando visualização)
-    # Importante: Date Input retorna date, session state pode ser None.
-    
-    with c3:
-        st.write("") # Espaçamento
-        st.write("") 
-        if st.button("7 Dias"):
-            set_date_range(7)
-            st.rerun()
-            
-    with c4:
-        st.write("")
-        st.write("")
-        if st.button("30 Dias"):
-            set_date_range(30)
-            st.rerun()
-
-    if st.button("Limpar Filtros"):
-        reset_filters()
-        st.rerun()
-
-# Variáveis para uso nas queries
-date_start = st.session_state['data_inicial']
-date_end = st.session_state['data_final']
-
-st.divider()
 
 # Alterado: Mapeamentos de tradução para português/Brasil
 STATUS_TRADUCAO = {
@@ -139,7 +78,63 @@ if not check_password():
     st.stop()
 
 # --- Dashboard Home ---
-st.title("🚀 Jeronimo Dashboard Monitor")
+# Layout de Cabeçalho e Filtros
+col_header, col_filters, col_auth = st.columns([2, 3, 1])
+
+with col_header:
+    st.title("🚀 Jeronimo Dashboard")
+
+# Gerenciamento de Estado dos Filtros
+def init_filters():
+    if 'data_inicial' not in st.session_state:
+        st.session_state['data_inicial'] = None
+    if 'data_final' not in st.session_state:
+        st.session_state['data_final'] = None
+
+def set_date_range(days):
+    st.session_state['data_final'] = date.today()
+    st.session_state['data_inicial'] = date.today() - timedelta(days=days)
+
+def reset_filters():
+    st.session_state['data_inicial'] = None
+    st.session_state['data_final'] = None
+
+init_filters()
+
+with col_filters:
+    st.subheader("Filtros de Data")
+    c1, c2, c3, c4 = st.columns([2, 2, 1, 1])
+    
+    # Inputs de Data (interagem com session_state)
+    # Alterado: Formato de data para DD/MM/YYYY
+    start_val = st.date_input("Início", value=st.session_state['data_inicial'], key='input_inicio', format="DD/MM/YYYY",
+                              on_change=lambda: st.session_state.update({'data_inicial': st.session_state.input_inicio}))
+    end_val = st.date_input("Fim", value=st.session_state['data_final'], key='input_fim', format="DD/MM/YYYY",
+                            on_change=lambda: st.session_state.update({'data_final': st.session_state.input_fim}))
+    
+    with c3:
+        st.write("") # Espaçamento
+        st.write("") 
+        if st.button("7 Dias"):
+            set_date_range(7)
+            st.rerun()
+            
+    with c4:
+        st.write("")
+        st.write("")
+        if st.button("30 Dias"):
+            set_date_range(30)
+            st.rerun()
+
+    if st.button("Limpar Filtros"):
+        reset_filters()
+        st.rerun()
+
+# Variáveis para uso nas queries
+date_start = st.session_state['data_inicial']
+date_end = st.session_state['data_final']
+
+st.divider()
 
 # Métricas
 # Alterado: Aumentado para 6 colunas para incluir Clientes e Leads
