@@ -62,19 +62,23 @@ def check_password():
     if st.session_state["password_correct"]:
         return True
 
-    st.subheader("Login")
-    # DEBUG TEMPORARIO
-    st.warning(f"DEBUG: User='{settings.DASHBOARD_USER}' Pass='{settings.DASHBOARD_PASSWORD}'")
+    st.warning(f"DEBUG: Configured User={repr(settings.DASHBOARD_USER)} Pass={repr(settings.DASHBOARD_PASSWORD)}")
     
     user = st.text_input("Usuário")
     pwd = st.text_input("Senha", type="password")
     
     if st.button("Entrar"):
-        if user == settings.DASHBOARD_USER and pwd == settings.DASHBOARD_PASSWORD:
+        # Limpa espaços em branco e compara
+        u_input = user.strip()
+        p_input = pwd.strip()
+        u_conf = settings.DASHBOARD_USER.strip()
+        p_conf = settings.DASHBOARD_PASSWORD.strip()
+        
+        if u_input == u_conf and p_input == p_conf:
             st.session_state["password_correct"] = True
             st.rerun()
         else:
-            st.error("Credenciais inválidas")
+            st.error(f"Credenciais inválidas. Recebido: User={repr(u_input)} Pass={repr(p_input)}")
     return False
 
 if not check_password():
