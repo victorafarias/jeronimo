@@ -36,7 +36,7 @@ def process_lead_logic(db: Session, user: User, message_text: str):
     
     # Se JÁ TIVER 3 ou mais respostas, bloqueia.
     if bot_responses >= 3:
-        send_message(user.phone, "Você atingiu o limite de interações gratuitas. Por favor aguarde um atendente.")
+        send_message(user.phone, "Você atingiu o limite de interações gratuitas. Faça sua assinatura em https://jeronimo.app.br/.")
         return False # Interrompe fluxo
     else:
         return True # Segue fluxo
@@ -57,21 +57,21 @@ def check_block_and_compliant(db: Session, user: User):
     # Alterado: Verificação de is_canceled (nova validação)
     # NULL ou FALSE = continua fluxo; TRUE = interrompe
     if user.is_canceled == True:
-        send_message(user.phone, "Sua assinatura foi cancelada. Renove sua assinatura no seu painel da Kiwify para acessar o Jerônimo novamente")
+        send_message(user.phone, "Sua assinatura foi cancelada. Renove sua assinatura no seu painel da Kiwify para acessar o Jerônimo novamente: https://dashboard.kiwify.com/login")
         logger.info(f"Usuário {user.phone} bloqueado: assinatura cancelada")
         return False
     
     # Alterado: Verificação de is_blocked
     # NULL ou FALSE = continua fluxo; TRUE = interrompe
     if user.is_blocked == True:
-        send_message(user.phone, "Atendimento indisponível temporariamente. (Bloqueio)")
+        send_message(user.phone, "Seu acesso foi bloqueado. Entre em contato com o suporte pelo email suporte@jeronimo.app.br")
         logger.info(f"Usuário {user.phone} bloqueado: is_blocked=True")
         return False
     
     # Alterado: Verificação de is_compliant
     # NULL ou FALSE = inadimplente (interrompe); TRUE = adimplente (continua)
     if user.is_compliant != True:  # NULL ou FALSE → inadimplente
-        send_message(user.phone, "Identificamos uma pendência. Entre em contato com o financeiro.")
+        send_message(user.phone, "Você está atrasado com sua assinatura. Regularize sua assinatura no seu painel da Kiwify para acessar o Jerônimo novamente: https://dashboard.kiwify.com/login")
         logger.info(f"Usuário {user.phone} bloqueado: inadimplente (is_compliant={user.is_compliant})")
         return False
         
