@@ -107,13 +107,26 @@ with col_filters:
     
     # Inputs de Data (interagem com session_state)
     # Alterado: Formato de data para DD/MM/YYYY
-    start_val = st.date_input("Início", value=st.session_state['data_inicial'], key='input_inicio', format="DD/MM/YYYY",
-                              on_change=lambda: st.session_state.update({'data_inicial': st.session_state.input_inicio}))
-    end_val = st.date_input("Fim", value=st.session_state['data_final'], key='input_fim', format="DD/MM/YYYY",
-                            on_change=lambda: st.session_state.update({'data_final': st.session_state.input_fim}))
+    with c1:
+        st.date_input(
+            "Início", 
+            value=st.session_state['data_inicial'], 
+            key='input_inicio', 
+            format="DD/MM/YYYY",
+            on_change=lambda: st.session_state.update({'data_inicial': st.session_state.input_inicio})
+        )
+    
+    with c2:
+        st.date_input(
+            "Fim", 
+            value=st.session_state['data_final'], 
+            key='input_fim', 
+            format="DD/MM/YYYY",
+            on_change=lambda: st.session_state.update({'data_final': st.session_state.input_fim})
+        )
     
     with c3:
-        st.write("") # Espaçamento
+        st.write("")  # Espaçamento para alinhar com os inputs
         st.write("") 
         if st.button("7 Dias"):
             set_date_range(7)
