@@ -59,10 +59,7 @@ def check_password():
     if "password_correct" not in st.session_state:
         st.session_state["password_correct"] = False
 
-    if st.session_state["password_correct"]:
-        return True
-
-    st.warning(f"DEBUG: Configured User={repr(settings.DASHBOARD_USER)} Pass={repr(settings.DASHBOARD_PASSWORD)}")
+    st.subheader("Login")
     
     user = st.text_input("Usuário")
     pwd = st.text_input("Senha", type="password")
@@ -78,7 +75,7 @@ def check_password():
             st.session_state["password_correct"] = True
             st.rerun()
         else:
-            st.error(f"Credenciais inválidas. Recebido: User={repr(u_input)} Pass={repr(p_input)}")
+            st.error("Credenciais inválidas")
     return False
 
 if not check_password():
