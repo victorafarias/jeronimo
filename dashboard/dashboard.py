@@ -380,8 +380,7 @@ df_failures = pd.read_sql("""
 """, engine)
 
 # Alterado: Renomeando colunas para nomes amigáveis em português
-if not df_failures.empty:
-    df_failures.columns = ['id', 'Data', 'Tentativas', 'Detalhes do Erro']
+df_failures.columns = ['ID', 'Data', 'Tentativas', 'Detalhes do Erro']
 
 st.dataframe(df_failures, use_container_width=True)
 
