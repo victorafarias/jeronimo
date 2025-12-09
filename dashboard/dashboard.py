@@ -85,19 +85,22 @@ with col_header:
     st.title("🚀 Jeronimo Dashboard")
 
 # Gerenciamento de Estado dos Filtros
+# Usamos as mesmas chaves do widget (input_inicio/input_fim) diretamente no session_state
 def init_filters():
-    if 'data_inicial' not in st.session_state:
-        st.session_state['data_inicial'] = None
-    if 'data_final' not in st.session_state:
-        st.session_state['data_final'] = None
+    if 'input_inicio' not in st.session_state:
+        st.session_state['input_inicio'] = None
+    if 'input_fim' not in st.session_state:
+        st.session_state['input_fim'] = None
 
 def set_date_range(days):
-    st.session_state['data_final'] = date.today()
-    st.session_state['data_inicial'] = date.today() - timedelta(days=days)
+    """Define o intervalo de datas baseado na quantidade de dias."""
+    st.session_state['input_fim'] = date.today()
+    st.session_state['input_inicio'] = date.today() - timedelta(days=days)
 
 def reset_filters():
-    st.session_state['data_inicial'] = None
-    st.session_state['data_final'] = None
+    """Limpa os filtros de data."""
+    st.session_state['input_inicio'] = None
+    st.session_state['input_fim'] = None
 
 init_filters()
 
@@ -105,24 +108,22 @@ with col_filters:
     st.subheader("Filtros de Data")
     c1, c2, c3, c4 = st.columns([2, 2, 1, 1])
     
-    # Inputs de Data (interagem com session_state)
-    # Alterado: Formato de data para DD/MM/YYYY
+    # Inputs de Data - usando diretamente o key como referência do session_state
+    # O Streamlit sincroniza automaticamente o valor do widget com session_state[key]
     with c1:
         st.date_input(
             "Início", 
-            value=st.session_state['data_inicial'], 
+            value=st.session_state['input_inicio'], 
             key='input_inicio', 
-            format="DD/MM/YYYY",
-            on_change=lambda: st.session_state.update({'data_inicial': st.session_state.input_inicio})
+            format="DD/MM/YYYY"
         )
     
     with c2:
         st.date_input(
             "Fim", 
-            value=st.session_state['data_final'], 
+            value=st.session_state['input_fim'], 
             key='input_fim', 
-            format="DD/MM/YYYY",
-            on_change=lambda: st.session_state.update({'data_final': st.session_state.input_fim})
+            format="DD/MM/YYYY"
         )
     
     with c3:
@@ -143,9 +144,9 @@ with col_filters:
         reset_filters()
         st.rerun()
 
-# Variáveis para uso nas queries
-date_start = st.session_state['data_inicial']
-date_end = st.session_state['data_final']
+# Variáveis para uso nas queries - lendo diretamente das chaves dos widgets
+date_start = st.session_state['input_inicio']
+date_end = st.session_state['input_fim']
 
 st.divider()
 
